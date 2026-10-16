@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Lab Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</head>
+<body>
+    <div class="topbar">
+        <div class="container">
+            <h1>Smart Lab Simulator</h1>
+            <nav class="nav">
+                <a href="/" class="active">Dashboard</a>
+                <a href="/computers">Computer Lab</a>
+                <a href="/taskmanager">Task Manager</a>
+                <a href="/reports">Reports</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="dashboard">
+            <div class="card"><h2>Total Computers</h2><p id="totalComputers">0</p></div>
+            <div class="card"><h2>Available</h2><p id="availableComputers">0</p></div>
+            <div class="card"><h2>In Use</h2><p id="inUseComputers">0</p></div>
+            <div class="card"><h2>Maintenance</h2><p id="maintenanceComputers">0</p></div>
+        </div>
+
+        <div class="section">
+            <h2>Overview</h2>
+            <p>One lab, two halves: the <strong>operating system</strong> half starts real processes through system calls, tracks them in a Task Manager and runs scheduling and memory simulations. The <strong>database</strong> half stores users, computers, bookings, every task and every system call.</p>
+            <a class="button" href="/taskmanager">Open Task Manager</a>
+        </div>
+
+        <div class="grid">
+            <div class="section">
+                <h2>Busiest Processes</h2>
+                <div class="scroll-x">
+                <table>
+                    <thead><tr><th>PID</th><th>Name</th><th>CPU %</th><th>Memory %</th></tr></thead>
+                    <tbody id="processList"></tbody>
+                </table>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>CPU Scheduling</h2>
+                <div class="form-row">
+                    <select id="algoSelect" aria-label="Algorithm">
+                        <option value="fcfs">FCFS</option>
+                        <option value="sjf">SJF (non-preemptive)</option>
+                        <option value="srtf">SRTF (preemptive SJF)</option>
+                        <option value="priority">Priority</option>
+                        <option value="rr">Round Robin</option>
+                    </select>
+                    <input id="quantumInput" type="number" min="1" value="2" style="width:80px;" aria-label="Time quantum" title="Time quantum (Round Robin)">
+                </div>
+                <div class="form-row">
+                    <input id="processInput" type="text" value="P1=5/0/2,P2=3/1/1,P3=8/2/3,P4=6/3/2" style="flex:1;" aria-label="Processes">
+                    <button id="scheduleBtn" type="button">Run</button>
+                </div>
+                <p class="hint">Format: name=burst/arrival/priority (arrival and priority are optional). Lower priority number = more important.</p>
+                <div id="ganttBox"></div>
+                <pre id="schedulingResult">Results will appear here.</pre>
+            </div>
+        </div>
+
+        <div class="grid-even">
+            <div class="section">
+                <h2>Memory Allocation</h2>
+                <div class="form-row">
+                    <select id="strategySelect" aria-label="Strategy">
+                        <option value="first">First Fit</option>
+                        <option value="best">Best Fit</option>
+                        <option value="worst">Worst Fit</option>
+                    </select>
+                    <input id="memoryInput" type="text" value="100,500,200,300,600 / 212,417,112,426" style="flex:1;" aria-label="Blocks and processes">
+                    <button id="memoryBtn" type="button">Run</button>
+                </div>
+                <p class="hint">Format: block sizes / process sizes.</p>
+                <pre id="memoryResult">Results will appear here.</pre>
+            </div>
+
+            <div class="section">
+                <h2>Page Replacement</h2>
+                <div class="form-row">
+                    <select id="pagingAlgo" aria-label="Algorithm">
+                        <option value="fifo">FIFO</option>
+                        <option value="lru">LRU</option>
+                        <option value="optimal">Optimal</option>
+                    </select>
+                    <input id="framesInput" type="number" min="1" value="3" style="width:80px;" aria-label="Frames" title="Number of frames">
+                    <input id="pagesInput" type="text" value="7,0,1,2,0,3,0,4,2,3,0,3,2" style="flex:1;" aria-label="Page reference string">
+                    <button id="pagingBtn" type="button">Run</button>
+                </div>
+                <pre id="pagingResult">Results will appear here.</pre>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

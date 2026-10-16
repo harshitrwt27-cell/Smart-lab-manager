@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/taskmanager.js') }}"></script>
+</head>
+<body>
+    <div class="topbar">
+        <div class="container">
+            <h1>Smart Lab Simulator</h1>
+            <nav class="nav">
+                <a href="/">Dashboard</a>
+                <a href="/computers">Computer Lab</a>
+                <a href="/taskmanager" class="active">Task Manager</a>
+                <a href="/reports">Reports</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="dashboard">
+            <div class="card"><h2>CPU</h2><p id="mCpu">0%</p></div>
+            <div class="card"><h2>Memory</h2><p id="mRam">0%</p><div class="bar"><span id="mRamBar" style="width:0%"></span></div></div>
+            <div class="card"><h2>Processes</h2><p id="mProcs">0</p></div>
+            <div class="card"><h2>CPU Cores</h2><p id="mCores">0</p></div>
+        </div>
+
+        <div class="section">
+            <h2>Start a lab task</h2>
+            <p class="hint">Uses the <strong>spawn</strong> system call: the simulator asks the OS to create a real process.</p>
+            <div class="form-row">
+                <label class="field">Program
+                    <select id="progSelect">
+                        {% for p in programs %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="field">Runs for (seconds)
+                    <input id="secInput" type="number" min="1" max="600" value="30" style="width:110px;">
+                </label>
+                <label class="field">Student
+                    <select id="userSelect">
+                        {% for u in users %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="field">Computer
+                    <select id="compSelect">
+                        {% for c in computers %}<option value="{{ c.id }}">{{ c.computer_name }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="field">Priority
+                    <select id="prioSelect">
+                        <option value="normal">normal</option>
+                        <option value="low">low</option>
+                        <option value="high">high</option>
+                    </select>
+                </label>
+                <label class="field">&nbsp;<button id="spawnBtn" type="button">Start task</button></label>
+            </div>
+            <p id="spawnMsg" class="hint" role="status"></p>
+        </div>
+
+        <div class="section">
+            <h2>Lab tasks (process control blocks)</h2>
+            <div class="states" id="stateStrip"></div>
+            <div class="scroll-x">
+            <table>
+                <thead><tr>
+                    <th>PID</th><th>PPID</th><th>Program</th><th>State</th><th>Priority</th>
+                    <th class="num">CPU %</th><th class="num">Mem MB</th><th class="num">Threads</th><th class="num">Runtime</th><th>Actions</th>
+                </tr></thead>
+                <tbody id="taskBody"><tr><td colspan="10" class="muted">No lab tasks yet. Start one above.</td></tr></tbody>
+            </table>
+            </div>
+        </div>
+
+        <div class="grid-even">
+            <div class="section">
+                <h2>System call console</h2>
+                <div class="form-row">
+                    <select id="callSelect" aria-label="System call"></select>
+                    <input id="callArgs" type="text" value="{}" style="flex:1;" aria-label="Arguments as JSON">
+                    <button id="callBtn" type="button">Invoke</button>
+                </div>
+                <p class="hint" id="callHelp">Pick a call. Arguments are JSON, e.g. {"name": "notes.txt", "text": "hello"}.</p>
+                <pre id="callResult">Result will appear here.</pre>
+            </div>
+
+            <div class="section">
+                <h2>System call trace</h2>
+                <div class="trace" id="traceBox"><span class="muted">No calls yet.</span></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>All processes on this machine</h2>
+            <div class="form-row">
+                <button id="sortCpu" type="button" class="neutral small">Sort by CPU</button>
+                <button id="sortMem" type="button" class="neutral small">Sort by memory</button>
+            </div>
+            <div class="scroll-x">
+            <table>
+                <thead><tr><th>PID</th><th>Name</th><th>Status</th><th class="num">CPU %</th><th class="num">Memory %</th><th class="num">Threads</th></tr></thead>
+                <tbody id="sysBody"></tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,6 @@
+Flask
+Flask-SQLAlchemy
+psutil
+python-dotenv
+PyMySQL
+pytest

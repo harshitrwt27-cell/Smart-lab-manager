@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+</head>
+<body>
+    <div class="topbar">
+        <div class="container">
+            <h1>Smart Lab Simulator</h1>
+            <nav class="nav">
+                <a href="/">Dashboard</a>
+                <a href="/computers">Computer Lab</a>
+                <a href="/taskmanager">Task Manager</a>
+                <a href="/reports" class="active">Reports</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>Database reports</h2>
+            <p class="hint">Each table below is a SQL view or query: JOIN, LEFT JOIN, GROUP BY, aggregates. The audit log is filled by database triggers.</p>
+        </div>
+        <div class="section"><h2>System calls by type (view: v_syscall_summary)</h2><div class="scroll-x" id="rep-syscalls"></div></div>
+        <div class="section"><h2>Tasks per student (view: v_user_task_usage)</h2><div class="scroll-x" id="rep-users"></div></div>
+        <div class="section"><h2>Computer utilisation (view: v_computer_utilisation)</h2><div class="scroll-x" id="rep-computers"></div></div>
+        <div class="section"><h2>Recent tasks (JOIN of task_log, users, computers)</h2><div class="scroll-x" id="rep-tasks"></div></div>
+        <div class="section"><h2>Audit log (filled by triggers)</h2><div class="scroll-x" id="rep-audit"></div></div>
+    </div>
+</body>
+</html>

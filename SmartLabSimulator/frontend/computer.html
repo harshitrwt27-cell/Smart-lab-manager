@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computer Lab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</head>
+<body>
+    <div class="topbar">
+        <div class="container">
+            <h1>Smart Lab Simulator</h1>
+            <nav class="nav">
+                <a href="/">Dashboard</a>
+                <a href="/computers" class="active">Computer Lab</a>
+                <a href="/taskmanager">Task Manager</a>
+                <a href="/reports">Reports</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+                        <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Computer</th>
+                        <th>IP Address</th>
+                        <th>Processor</th>
+                        <th>RAM</th>
+                        <th>OS</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="computerTableBody">
+                    {% for computer in computers %}
+                    <tr>
+                        <td>{{ computer.id }}</td>
+                        <td>{{ computer.computer_name }}</td>
+                        <td>{{ computer.ip_address }}</td>
+                        <td>{{ computer.processor }}</td>
+                        <td>{{ computer.ram_gb }} GB</td>
+                        <td>{{ computer.operating_system }}</td>
+                        <td><span class="badge status-{{ computer.status }}">{{ computer.status }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
