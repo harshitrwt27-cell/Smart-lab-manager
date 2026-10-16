@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Lab Simulator</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0b1020; color: #e5ecff; margin: 0; }
+  header { background: #121a33; padding: 14px 24px; border-bottom: 1px solid #25325c; }
+  main { max-width: 1150px; margin: 0 auto; padding: 18px; display: grid; gap: 16px; }
+  section { background: #121a33; border: 1px solid #25325c; border-radius: 10px; padding: 16px; overflow-x: auto; }
+  h1, h2 { margin: 0 0 10px; } h2 { font-size: 1.05rem; } small, .muted { color: #8ea4d9; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; align-items: center; }
+  input, select, button { padding: 8px 10px; border-radius: 6px; border: 1px solid #2d427b; background: #0d1730; color: #e5ecff; }
+  button { background: #2a5bd7; border: 0; cursor: pointer; } button.red { background: #c24b4b; } button.grey { background: #3a4a7a; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; } th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #25325c; }
+  pre { background: #0d1730; padding: 10px; border-radius: 6px; overflow: auto; max-height: 230px; margin: 8px 0 0; font-size: 13px; }
+  .badge { padding: 2px 8px; border-radius: 99px; font-size: 12px; background: #25325c; }
+  .RUNNING, .AVAILABLE { background: #1b6b4e; } .WAITING, .IN_USE { background: #7a6a1c; } .SUSPENDED { background: #5b3a86; }
+  .OFFLINE, .TERMINATED, .MAINTENANCE { background: #4a5468; }
+  .gantt { display: flex; margin-top: 10px; } .gantt div { background: #2a5bd7; border: 1px solid #0b1020; text-align: center; padding: 8px 0; font-size: 12px; min-width: 20px; }
+  .gantt div:nth-child(even) { background: #1b8f6a; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } @media (max-width: 800px) { .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header><h1>Smart Lab Simulator</h1><small>Operating System + DBMS in one lab</small></header>
+<main>
+
+<section id="live">
+  <h2>Lab computers (live, sent by agent.py running on each PC)</h2>
+  <table><thead><tr><th>Computer</th><th>Lab</th><th>State</th><th>CPU %</th><th>RAM %</th><th>Procs</th><th>Busiest processes</th><th>Seen</th></tr></thead>
+  <tbody id="computers"><tr><td colspan="8" class="muted">No computers yet. Run agent.py on a PC.</td></tr></tbody></table>
+</section>
+
+<div class="two">
+<section>
+  <h2>Task manager (this server)</h2>
+  <div class="muted" id="machine"></div>
+  <div class="row">
+    <select id="prog"><option>compiler-sim</option><option>editor-sim</option></select>
+    <input id="secs" type="number" value="30" min="1" max="600" style="width:80px" title="seconds">
+    <select id="taskUser"></select>
+    <button onclick="spawnTask()">Start task</button>
+  </div>
+  <table><thead><tr><th>PID</th><th>Program</th><th>State</th><th>CPU %</th><th>MB</th><th></th></tr></thead><tbody id="tasks"></tbody></table>
+  <small id="taskMsg"></small>
+</section>
+
+<section>
+  <h2>System calls</h2>
+  <div class="row"><select id="call" onchange="callHelp()"></select><input id="args" value="{}" style="flex:1"><button onclick="callIt()">Invoke</button></div>
+  <small id="help"></small>
+  <pre id="callOut">result appears here</pre>
+  <small>Trace (saved in the database):</small>
+  <pre id="trace"></pre>
+</section>
+</div>
+
+<div class="two">
+<section>
+  <h2>CPU scheduling</h2>
+  <div class="row">
+    <select id="algo"><option value="fcfs">FCFS</option><option value="sjf">SJF</option><option value="rr">Round Robin</option></select>
+    <input id="quantum" type="number" value="2" min="1" style="width:70px" title="quantum">
+    <input id="procs" value="P1=5/0,P2=3/1,P3=8/2,P4=6/3" style="flex:1" title="name=burst/arrival">
+    <button onclick="runSchedule()">Run</button>
+  </div>
+  <small>Format: name=burst/arrival</small>
+  <div id="gantt"></div><pre id="schedOut">result appears here</pre>
+</section>
+
+<section>
+  <h2>Bookings</h2>
+  <div class="row">
+    <select id="bUser"></select><select id="bComp"></select>
+    <input id="bStart" type="datetime-local"><input id="bEnd" type="datetime-local"><button onclick="book()">Book</button>
+  </div>
+  <small id="bookMsg"></small>
+  <table><thead><tr><th>#</th><th>Student</th><th>Computer</th><th>From</th><th>To</th><th>Status</th><th></th></tr></thead><tbody id="bookings"></tbody></table>
+</section>
+</div>
+
+<section>
+  <h2>Database reports (SQL views)</h2>
+  <div class="row"><select id="rep" onchange="loadReport()">
+    <option value="syscalls">System calls summary (GROUP BY)</option><option value="tasks">Tasks per student (LEFT JOIN)</option>
+    <option value="algorithms">Algorithm comparison (AVG)</option><option value="audit">Audit log (filled by triggers)</option></select></div>
+  <div id="report"></div>
+</section>
+
+<section>
+  <h2>SQLite DBMS</h2>
+  <div class="row">
+    <select id="dbObject" onchange="loadDbObject()" aria-label="SQLite database object"></select>
+    <small id="dbObjectMeta" class="muted">Read-only database preview</small>
+  </div>
+  <div id="dbSchema"></div>
+  <div id="dbRows"></div>
+</section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function api(url, body) {
+  const r = await fetch(url, body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || 'error ' + r.status);
+  return data;
+}
+const badge = (s) => `<span class="badge ${esc(s)}">${esc(s)}</span>`;
+const table = (rows) => !rows.length ? '<p class="muted">No data yet.</p>' :
+  '<table><thead><tr>' + Object.keys(rows[0]).map((c) => `<th>${esc(c)}</th>`).join('') + '</tr></thead><tbody>' +
+  rows.map((r) => '<tr>' + Object.values(r).map((v) => `<td>${esc(v)}</td>`).join('') + '</tr>').join('') + '</tbody></table>';
+
+// ----- live computers -----
+let computers = [];
+async function loadComputers() {
+  computers = await api('/api/computers');
+  if (computers.length) $('computers').innerHTML = computers.map((c) => {
+    const top = JSON.parse(c.top_procs || '[]').map((p) => esc(p.name) + ' ' + p.cpu.toFixed(0) + '%').join(', ');
+    return `<tr><td>${esc(c.name)}</td><td>${esc(c.lab)}</td><td>${badge(c.state)}</td><td>${c.cpu ?? '-'}</td><td>${c.ram ?? '-'}</td>
+            <td>${c.procs ?? '-'}</td><td>${top}</td><td>${c.seen_seconds_ago ?? '-'} s</td></tr>`;
+  }).join('');
+  const keep = $('bComp').value;
+  $('bComp').innerHTML = computers.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  $('bComp').value = keep;
+}
+
+// ----- task manager -----
+async function loadTasks() {
+  const d = await api('/api/tasks');
+  $('machine').textContent = `CPU ${d.machine.cpu}%  |  RAM ${d.machine.ram_percent}% (${d.machine.ram_used_mb}/${d.machine.ram_total_mb} MB)  |  ${d.machine.processes} processes`;
+  $('tasks').innerHTML = d.tasks.map((t) => `<tr><td>${t.pid}</td><td>${esc(t.program)}</td><td>${badge(t.state)}</td><td>${t.cpu}</td><td>${t.memory_mb}</td><td>` +
+    (t.state === 'TERMINATED' ? 'exit ' + t.exit_code :
+      `<button class="grey" onclick="act(${t.pid},'${t.state === 'SUSPENDED' ? 'resume' : 'suspend'}')">${t.state === 'SUSPENDED' ? 'Resume' : 'Suspend'}</button> <button class="red" onclick="act(${t.pid},'kill')">Kill</button>`) +
+    '</td></tr>').join('');
+}
+async function spawnTask() {
+  try { const t = await api('/api/tasks', {program: $('prog').value, seconds: +$('secs').value, user_id: +$('taskUser').value, computer_id: null});
+        $('taskMsg').textContent = 'spawn() created process ' + t.pid; } catch (e) { $('taskMsg').textContent = e.message; }
+  refresh();
+}
+async function act(pid, action) { try { await api(`/api/tasks/${pid}/${action}`, {}); } catch (e) { $('taskMsg').textContent = e.message; } refresh(); }
+
+// ----- system calls -----
+const EXAMPLE = {write_file: {name: 'notes.txt', text: 'hello'}, read_file: {name: 'notes.txt'}, spawn: {program: 'editor-sim', seconds: 20}, pipe: {message: 'hi'}};
+async function loadCalls() {
+  const d = await api('/api/syscalls');
+  if (!$('call').options.length) { $('call').innerHTML = d.calls.map((c) => `<option value="${esc(c.name)}" data-help="${esc(c.help)}">${esc(c.name)}</option>`).join(''); callHelp(); }
+  $('trace').textContent = d.trace.map((t) => `${t.at}  ${t.call.padEnd(11)} ${t.status.padEnd(6)} ${t.ms} ms  ${t.args}`).join('\n');
+}
+function callHelp() { const o = $('call').selectedOptions[0]; $('help').textContent = o.dataset.help; $('args').value = JSON.stringify(EXAMPLE[o.value] || {}); }
+async function callIt() {
+  let args; try { args = JSON.parse($('args').value || '{}'); } catch (e) { $('callOut').textContent = 'arguments must be JSON'; return; }
+  const r = await fetch('/api/syscall', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({call: $('call').value, args})});
+  $('callOut').textContent = JSON.stringify(await r.json(), null, 2); refresh();
+}
+
+// ----- scheduling -----
+async function runSchedule() {
+  try {
+    const processes = $('procs').value.split(',').map((p) => { const [pid, rest] = p.split('='); const [burst, arrival] = rest.split('/').map(Number); return {pid: pid.trim(), burst, arrival: arrival || 0}; });
+    const r = await api('/api/schedule', {algorithm: $('algo').value, quantum: +$('quantum').value, processes});
+    const end = r.gantt[r.gantt.length - 1][2];
+    $('gantt').innerHTML = '<div class="gantt">' + r.gantt.map(([pid, s, e]) => `<div style="width:${(e - s) / end * 100}%" title="${s} to ${e}">${esc(pid)}</div>`).join('') + '</div>';
+    $('schedOut').textContent = `average waiting ${r.avg_wait}   average turnaround ${r.avg_turnaround}\n\n` + r.processes.map((p) => `${p.pid}: arrival ${p.arrival} burst ${p.burst} finish ${p.finish} waiting ${p.waiting} turnaround ${p.turnaround}`).join('\n');
+  } catch (e) { $('schedOut').textContent = 'Error: ' + e.message; }
+}
+
+// ----- bookings -----
+async function loadBookings() {
+  const rows = await api('/api/bookings');
+  $('bookings').innerHTML = rows.map((b) => `<tr><td>${b.id}</td><td>${esc(b.student)}</td><td>${esc(b.computer)}</td><td>${esc(b.start_time)}</td><td>${esc(b.end_time)}</td><td>${badge(b.status === 'ACTIVE' ? 'AVAILABLE' : 'OFFLINE')} ${esc(b.status)}</td>
+    <td>${b.status === 'ACTIVE' ? `<button class="grey" onclick="cancelBooking(${b.id})">Cancel</button>` : ''}</td></tr>`).join('');
+}
+async function book() {
+  try { await api('/api/bookings', {user_id: +$('bUser').value, computer_id: +$('bComp').value, start: $('bStart').value, end: $('bEnd').value}); $('bookMsg').textContent = 'Booked.'; }
+  catch (e) { $('bookMsg').textContent = 'Refused: ' + e.message; }
+  refresh();
+}
+async function cancelBooking(id) { await api(`/api/bookings/${id}/cancel`, {}); refresh(); }
+
+// ----- reports -----
+async function loadReport() { $('report').innerHTML = table(await api('/api/report/' + $('rep').value)); }
+
+async function loadDbObjects() {
+  const objects = await api('/api/db/objects');
+  const selected = $('dbObject').value;
+  $('dbObject').innerHTML = objects.map((o) => `<option value="${esc(o.name)}">${esc(o.name)} (${esc(o.type)}, ${o.rows} rows)</option>`).join('');
+  if (objects.some((o) => o.name === selected)) $('dbObject').value = selected;
+  await loadDbObject();
+}
+async function loadDbObject() {
+  if (!$('dbObject').value) {
+    $('dbSchema').innerHTML = '<p class="muted">No database objects.</p>';
+    $('dbRows').innerHTML = '';
+    return;
+  }
+  const d = await api('/api/db/objects/' + encodeURIComponent($('dbObject').value));
+  $('dbObjectMeta').textContent = `${d.columns.length} columns | showing up to ${d.rows.length} rows`;
+  $('dbSchema').innerHTML = '<h3>Schema</h3>' + table(d.columns.map((c) => ({name: c.name, type: c.type || 'dynamic', required: c.notnull ? 'yes' : 'no', primary_key: c.pk ? 'yes' : 'no'})));
+  $('dbRows').innerHTML = '<h3>Preview</h3>' + table(d.rows);
+}
+
+async function refresh() { try { await Promise.all([loadComputers(), loadTasks(), loadCalls(), loadBookings(), loadReport(), loadDbObjects()]); } catch (e) { console.error(e); } }
+(async () => {
+  const users = await api('/api/users');
+  $('bUser').innerHTML = $('taskUser').innerHTML = users.map((u) => `<option value="${u.id}">${esc(u.name)}</option>`).join('');
+  refresh(); setInterval(refresh, 3000);
+})();
+</script>
+</body>
+</html>
